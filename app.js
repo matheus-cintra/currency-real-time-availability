@@ -46,11 +46,13 @@ app.get('/get-cotation', async (req, res) => {
     cotation = cotation.find(x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(moedas[position2].toLowerCase()))
     cotation = cotation.split(`">`)
     cotation = cotation[1].split('</div>')
-    console.warn('################################################################');
-    console.warn('');
-    console.warn(`Conversão de ${normalMoedas[position1]} para ${normalMoedas[position2]} (Google Results): 1 ${normalMoedas[position1]} equivalem a ${cotation[0]}`);
-    console.warn('');
-    console.warn('################################################################');
+
+    res.status(200).json({de: normalMoedas[position1], para: normalMoedas[position2], valor: cotation[0]})
+    // console.warn('################################################################');
+    // console.warn('');
+    // console.warn(`Conversão de ${normalMoedas[position1]} para ${normalMoedas[position2]} (Google Results): 1 ${normalMoedas[position1]} equivalem a ${cotation[0]}`);
+    // console.warn('');
+    // console.warn('################################################################');
   }
 })
 
