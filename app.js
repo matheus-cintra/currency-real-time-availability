@@ -12,48 +12,60 @@ app.get('/get-cotation', async (req, res) => {
   let { de, para } = req.query;
 
   de = de.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  para = para.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
-  let moedasLowerCase = moedas.map(x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
-
-  if (moedasLowerCase.includes(de) && moedasLowerCase.includes(para)) {
-    let position1 = moedas.indexOf(de);
-    let position2 = moedas.indexOf(para);
-    let converterDe = moedas[position1].split(" ").join("+").normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    let converterPara = moedas[position2].split(" ").join("+").normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-    const uri = `https://www.google.com/search?q=${converterDe}+para+${converterPara}`
-    const result = await axios.get(uri, {
-      "headers": {
-        "upgrade-insecure-requests": "1",
-        "Content-Type": "text/plain",
-        "charset": "utf-8"
-      },
-      responseType: "arraybuffer",
-      "referrerPolicy": "no-referrer-when-downgrade",
-      "body": null,
-      "method": "GET",
-      "mode": "cors"
-    });
-
-    const iconv = new Iconv('ISO-8859-2', 'utf-8');
-    const preCotation = iconv
-      .convert(new Buffer.from(result.data), 'ISO-8859-2')
-      .toString('utf-8')
+  para = para.map(x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
+  let response = []
 
 
-    let cotation = preCotation.split("<div class=")
-    cotation = cotation.filter(x => x.length < 110)
-    cotation = cotation.find(x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(moedas[position2].toLowerCase()))
-    cotation = cotation.split(`">`)
-    cotation = cotation[1].split('</div>')
+  for (const [idx, value] of para.entries()) {
 
-    res.status(200).json({de: normalMoedas[position1], para: normalMoedas[position2], valor: cotation[0]})
-    // console.warn('################################################################');
-    // console.warn('');
-    // console.warn(`Conversão de ${normalMoedas[position1]} para ${normalMoedas[position2]} (Google Results): 1 ${normalMoedas[position1]} equivalem a ${cotation[0]}`);
-    // console.warn('');
-    // console.warn('################################################################');
+
+    let moedasLowerCase = moedas.map(x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
+
+    if (moedasLowerCase.includes(de) && moedasLowerCase.includes(value)) {
+
+      let position1 = moedas.indexOf(de);
+      let position2 = moedas.indexOf(value);
+      let converterDe = moedas[position1].split(" ").join("+").normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      let converterPara = moedas[position2].split(" ").join("+").normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+
+      const uri = `https://www.google.com/search?q=${converterDe}+para+${converterPara}`
+      const result = await axios.get(uri, {
+        "headers": {
+          "upgrade-insecure-requests": "1",
+          "Content-Type": "text/plain",
+          "charset": "utf-8"
+        },
+        responseType: "arraybuffer",
+        "referrerPolicy": "no-referrer-when-downgrade",
+        "body": null,
+        "method": "GET",
+        "mode": "cors"
+      });
+
+      const iconv = new Iconv('ISO-8859-2', 'utf-8');
+      const preCotation = iconv
+        .convert(new Buffer.from(result.data), 'ISO-8859-2')
+        .toString('utf-8')
+
+
+      let cotation = preCotation.split("<div class=")
+      cotation = cotation.filter(x => x.length < 110)
+      cotation = cotation.find(x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(moedas[position2].toLowerCase()))
+      cotation = cotation.split(`">`)
+      cotation = cotation[1].split('</div>')
+      let field = moedas[position2]
+      response.push({
+        [field]: cotation[0],
+      })
+
+    }
+    // res.status(200).json({ de: normalMoedas[position1], para: normalMoedas[position2], valor: cotation[0] })
   }
+
+  res.status(200).json({ response })
+
+
 })
 
 app.listen(process.env.PORT || 3000, () => {
